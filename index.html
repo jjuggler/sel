@@ -379,7 +379,7 @@ function renderLogin(){
         ${state.settings.schoolName?`<p class="text-xl font-bold text-slate-700 break-keep leading-tight">${esc(state.settings.schoolName)}</p>`:''}
       </div>`:''}
       <div class="text-center mt-5"><button onclick="openAdminGate()" class="text-xs text-slate-400 underline">관리자 페이지</button></div>
-      <p class="text-center text-[10px] text-slate-300 mt-2">© jjuggler · v6.2 · ${new Date().getFullYear()}</p>
+      <p class="text-center text-[10px] text-slate-300 mt-2">© jjuggler · v6.3 · ${new Date().getFullYear()}</p>
     </div>`));
   setTimeout(()=>$('#in-sid')&&$('#in-sid').focus(),100);
   if(window._deferredPrompt){ const b=$('#install-btn'); if(b) b.classList.remove('hidden'); }
@@ -1459,7 +1459,7 @@ function renderAdmin(){
       </aside>
       <main id="admin-right" class="flex-1 min-w-0 bg-white rounded-2xl border border-slate-100 p-4 min-h-[50vh]"></main>
     </div>
-    <p class="text-center text-[10px] text-slate-300 mt-4">© jjuggler · 인성 실천 포트폴리오 v6.2</p>
+    <p class="text-center text-[10px] text-slate-300 mt-4">© jjuggler · 인성 실천 포트폴리오 v6.3</p>
   </div>`));
   const f=window['admin_'+state.adminTool]; if(typeof f==='function') f();
   window.scrollTo(0,0);
@@ -2584,9 +2584,46 @@ function admin_connect(){
   const connected=state.fbReady;
   const fbSection=`
     <button onclick="window.open('https://console.firebase.google.com','_blank')" class="tap w-full py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold mb-2">🔥 Firebase 콘솔 열기</button>
-    <textarea id="fb-input" rows="6" placeholder="const firebaseConfig = { ... } 전체 붙여넣기" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-[11px] font-mono">${esc(fbText)}</textarea>
+    <textarea id="fb-input" rows="6" oninput="fbInputChanged()" placeholder="const firebaseConfig = { ... } 전체 붙여넣기" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-[11px] font-mono">${esc(fbText)}</textarea>
+    <p id="fb-status" class="text-[11px] text-slate-400 mt-1">붙여넣으면 자동으로 인식해요</p>
+    <div id="fb-after" style="display:none" class="mt-2">
+      <button onclick="openFbPage('auth')" class="tap w-full py-2 bg-amber-500 text-white rounded-lg text-xs font-semibold mb-1.5">👤 익명 로그인 켜기 (내 프로젝트로 열림)</button>
+      <div class="flex gap-1.5">
+        <button onclick="openFbPage('rules')" class="tap flex-1 py-2 bg-amber-500 text-white rounded-lg text-xs font-semibold">🛡️ 규칙 페이지 열기</button>
+        <button onclick="copyRules()" class="tap flex-1 py-2 bg-slate-700 text-white rounded-lg text-xs font-semibold">📋 규칙 코드 복사</button>
+      </div>
+    </div>
     <button onclick="saveFb()" class="tap w-full mt-2 py-2.5 bg-teal-600 text-white rounded-lg text-sm font-bold">💾 저장하고 연결</button>
     ${fbText?`<button onclick="clearFb()" class="tap w-full mt-2 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg text-xs">동기화 설정 삭제</button>`:''}`;
+  const fbWizard=`
+  <div class="rounded-xl border border-teal-200 bg-teal-50/60 p-3 mb-2">
+    <p class="text-[12px] font-bold text-teal-800 mb-2.5">🧭 처음이세요? ①→④만 따라 하면 <b>5분 안에</b> 연결돼요 (전부 무료)</p>
+    <div class="mb-3">
+      <p class="text-[12px] text-slate-800 font-bold mb-1">① Firebase 프로젝트 만들기</p>
+      <p class="text-[11px] text-slate-500 mb-1.5">버튼 → 구글 로그인 → <b>‘프로젝트 만들기’</b> → 이름 자유 → 애널리틱스는 꺼도 됨 → 만들기</p>
+      <button onclick="window.open('https://console.firebase.google.com','_blank')" class="tap w-full py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold">🔥 Firebase 콘솔 열기</button>
+    </div>
+    <div class="mb-3">
+      <p class="text-[12px] text-slate-800 font-bold mb-1">② 웹앱 등록하고 코드 복사</p>
+      <p class="text-[11px] text-slate-500">프로젝트 화면에서 <b>⚙️ 프로젝트 설정 → 내 앱 → 웹(&lt;/&gt;) 추가 → 앱 등록</b> → 나오는 <b>const firebaseConfig = { … };</b> 통째로 복사 (호스팅 체크는 안 함)</p>
+    </div>
+    <div class="mb-3">
+      <p class="text-[12px] text-slate-800 font-bold mb-1">③ 여기에 붙여넣기 <span class="text-teal-600">— 자동 인식</span></p>
+      <textarea id="fb-input" rows="6" oninput="fbInputChanged()" placeholder="복사한 코드를 그대로 붙여넣으세요 — 형태가 달라도 자동으로 인식해요" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-[11px] font-mono bg-white">${esc(fbText)}</textarea>
+      <p id="fb-status" class="text-[11px] text-slate-400 mt-1">붙여넣으면 자동으로 인식해요</p>
+    </div>
+    <div id="fb-after" style="display:none" class="mb-1">
+      <p class="text-[12px] text-slate-800 font-bold mb-1">④ 마무리 두 가지 — 버튼이 <b>내 프로젝트</b>로 바로 열려요</p>
+      <button onclick="openFbPage('auth')" class="tap w-full py-2 bg-amber-500 text-white rounded-lg text-xs font-semibold mb-1.5">👤 익명 로그인 켜기 — 열리면 ‘익명’ 선택 → 사용 설정 → 저장</button>
+      <button onclick="openFbPage('fs')" class="tap w-full py-2 bg-amber-500 text-white rounded-lg text-xs font-semibold mb-1.5">🗄️ Firestore 만들기 — Standard → 서울(Seoul) → 테스트 모드</button>
+      <div class="flex gap-1.5">
+        <button onclick="openFbPage('rules')" class="tap flex-1 py-2 bg-amber-500 text-white rounded-lg text-xs font-semibold">🛡️ 규칙 페이지 열기</button>
+        <button onclick="copyRules()" class="tap flex-1 py-2 bg-slate-700 text-white rounded-lg text-xs font-semibold">📋 규칙 코드 복사</button>
+      </div>
+      <p class="text-[11px] text-slate-500 mt-1">규칙 페이지에서 기존 내용을 <b>모두 지우고</b>, 복사한 규칙을 붙여넣은 뒤 <b>[게시]</b>를 누르세요.</p>
+    </div>
+    <button onclick="saveFb()" class="tap w-full mt-1 py-2.5 bg-teal-600 text-white rounded-lg text-sm font-bold">💾 저장하고 연결</button>
+  </div>`;
   sheet('연결·AI 설정', `
     <div class="rounded-xl p-3 mb-3 ${connected?'bg-teal-50 border border-teal-200':'bg-amber-50 border border-amber-200'}">
       <p class="text-sm font-bold ${connected?'text-teal-800':'text-amber-800'}">${connected?'☁️ 데이터 동기화 연결됨':'📱 아직 연결 안 됨 (이 기기에만 저장)'}</p>
@@ -2594,7 +2631,7 @@ function admin_connect(){
     </div>
     ${connected
       ? `<details><summary class="text-xs text-slate-400 mb-2">🔗 Firebase 연결 변경 (보통 건드릴 필요 없음)</summary><div class="mt-2">${fbSection}</div></details>`
-      : `<h3 class="text-sm font-bold text-slate-800 mb-1">🔗 Firebase 연결</h3><p class="text-[11px] text-slate-500 mb-2">firebaseConfig 코드 전체를 붙여넣고 저장하세요.</p>${fbSection}`}
+      : `<h3 class="text-sm font-bold text-slate-800 mb-1">🔗 Firebase 연결</h3>${fbWizard}`}
 
     <h3 class="text-sm font-bold text-slate-800 mt-5 mb-1">🤖 AI 코칭 키 (선택)</h3>
     <div class="bg-violet-50 border border-violet-200 rounded-lg p-2.5 mb-2 text-[11px] text-violet-800 leading-relaxed">
@@ -2617,9 +2654,16 @@ function admin_connect(){
     <button onclick="saveAi()" class="tap w-full py-2.5 bg-violet-600 text-white rounded-lg text-sm font-bold">💾 AI 키 저장</button>
     ${savedKey?`<button onclick="$('#ai-input').value='';saveAi()" class="tap w-full mt-2 py-2 bg-slate-100 rounded-lg text-xs text-slate-500">AI 키 지우기</button>`:''}
   `);
+  setTimeout(()=>{ if($('#fb-input')&&$('#fb-status')) fbInputChanged(); },60);
 }
 function saveFb(){ const cfg=parseFirebaseConfig($('#fb-input').value); if(!cfg){ toast('firebaseConfig 코드를 인식하지 못했어요.'); return; } localStorage.setItem('insung_fb_config',JSON.stringify(cfg)); toast('저장했어요. 새로고침하면 연결됩니다.'); setTimeout(()=>location.reload(),900); }
 function clearFb(){ if(confirm('동기화 설정을 삭제할까요?')){ localStorage.removeItem('insung_fb_config'); location.reload(); } }
+const FB_RULES_TXT="rules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    match /{document=**} {\n      allow read, write: if request.auth != null;\n    }\n  }\n}";
+function fbInputChanged(){ const el=$('#fb-input'); if(!el) return; const cfg=parseFirebaseConfig(el.value); const st=$('#fb-status'), after=$('#fb-after');
+  if(cfg){ window._fbPid=cfg.projectId; if(st){ st.innerHTML='✅ 인식 완료: <b>'+esc(cfg.projectId)+'</b> — 아래 버튼이 이 프로젝트로 바로 열려요'; st.className='text-[11px] font-bold text-teal-700 mt-1'; } if(after) after.style.display=''; }
+  else { window._fbPid=null; if(st){ st.textContent=el.value.trim()?'아직 인식 안 됨 — apiKey가 포함된 코드 전체를 붙여넣어 주세요':'붙여넣으면 자동으로 인식해요'; st.className='text-[11px] text-slate-400 mt-1'; } if(after) after.style.display='none'; } }
+function openFbPage(kind){ const pid=window._fbPid; let u='https://console.firebase.google.com'; if(pid){ if(kind==='auth') u+='/project/'+pid+'/authentication/providers'; else if(kind==='fs') u+='/project/'+pid+'/firestore'; else if(kind==='rules') u+='/project/'+pid+'/firestore/databases/-default-/rules'; } window.open(u,'_blank'); }
+function copyRules(){ const done=()=>toast('규칙 코드를 복사했어요 📋 규칙 칸을 비우고 붙여넣은 뒤 [게시]'); const fb=()=>{ const ta=document.createElement('textarea'); ta.value=FB_RULES_TXT; document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); }catch(e){} ta.remove(); }; if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(FB_RULES_TXT).then(done).catch(()=>{ fb(); done(); }); } else { fb(); done(); } }
 function saveAi(){ const v=($('#ai-input').value||'').trim(); state.settings.geminiKey=v; localStorage.setItem('insung_gemini_key',v); window.geminiApiKey=v; save(); toast(v?'AI 키를 저장했어요 ✨ 모든 기기에서 켜져요':'AI 키를 비웠어요'); }
 </script>
 <script id="boot">

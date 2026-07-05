@@ -1,5 +1,5 @@
 // 인성 실천 포트폴리오 — 서비스워커 (네트워크 우선 + 오프라인 폴백)
-const CACHE_NAME = 'insung-app-v42';
+const CACHE_NAME = 'insung-app-v43';
 const CORE_ASSETS = [
   './',
   './index.html',
